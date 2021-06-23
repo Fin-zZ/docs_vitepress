@@ -217,6 +217,8 @@ Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
 
 先缓存旧节点，根据有无旧节点，利用vm._patch方法，创建vm.$el
 
+这里先分析 update的 首次渲染功能；
+
 ```js
   __patch__: (
     a: Element | VNode | void,
@@ -245,9 +247,80 @@ export const patch: Function = createPatchFunction({ nodeOps, modules })
 
 patch是与平台相关的，web weex环境都是会去渲染vdom，但是服务端就不必了。
 
+```
+src/platforms/web/runtime/patch.js
+```
 
+以上是web中的patch定义地址
 
+```js
+import * as nodeOps from 'web/runtime/node-ops'
+import { createPatchFunction } from 'core/vdom/patch'
+import baseModules from 'core/vdom/modules/index'
+import platformModules from 'web/runtime/modules/index'
 
+// the directive module should be applied last, after all
+// built-in modules have been applied.
+const modules = platformModules.concat(baseModules)
+
+export const patch: Function = createPatchFunction({ nodeOps, modules })
+```
+
+根据配置返回不同的createPatchFunction
+
+createPatchFunction内部定义了一大堆分支 方法，最终也还是 返回一个 patch方法。
+
+在其内部，首次渲染的路径，isRealElement 为 true，最终调用createElm方法，这里会简单检查是否要渲染挂载到dom上，毕竟服务端无需挂载，
+
+大概逻辑就是 将 虚拟dom创建成 真实dom，并插入到父节点中去，接着 createChildren 方法对针对他的子虚拟节点，进行递归的调用createElm 创建 真实dom，
+
+```js
+createChildren(vnode, children, insertedVnodeQueue)
+
+function createChildren (vnode, children, insertedVnodeQueue) {
+  if (Array.isArray(children)) {
+    if (process.env.NODE_ENV !== 'production') {
+      checkDuplicateKeys(children)
+    }
+    for (let i = 0; i < children.length; ++i) {
+      createElm(children[i], insertedVnodeQueue, vnode.elm, null, true, children, i)
+    }
+  } else if (isPrimitive(vnode.text)) {
+    nodeOps.appendChild(vnode.elm, nodeOps.createTextNode(String(vnode.text)))
+  }
+}
+```
+
+接着执行 invokeCreateHooks，循环的执行create 钩子里的方法，
+
+最后，把vnode push 到 insertedVnodeQueue
+
+```js
+createChildren(vnode, children, insertedVnodeQueue)
+
+function createChildren (vnode, children, insertedVnodeQueue) {
+  if (Array.isArray(children)) {
+    if (process.env.NODE_ENV !== 'production') {
+      checkDuplicateKeys(children)
+    }
+    for (let i = 0; i < children.length; ++i) {
+      createElm(children[i], insertedVnodeQueue, vnode.elm, null, true, children, i)
+    }
+  } else if (isPrimitive(vnode.text)) {
+    nodeOps.appendChild(vnode.elm, nodeOps.createTextNode(String(vnode.text)))
+  }
+}
+```
+
+接着执行 insert
+
+```js
+insert(parentElm, vnode.elm, refElm)
+```
+
+其实就是检查有无父节点，有则先插入子节点，无则直接添加。
+
+再回到 `patch` 方法，首次渲染我们调用了 `createElm` 方法，这里传入的 `parentElm` 是 `oldVnode.elm` 的父元素，在我们的例子是 id 为 `#app` div 的父元素，也就是 Body；实际上整个过程就是递归创建了一个完整的 DOM 树并插入到 Body 上。
 
 
 
