@@ -1,10 +1,48 @@
 new Vue
 
-vue先执行自身的 _init 函数，进行初始化。
+
+
+vue的定义和开发环境相关，我们讨论的是runtime with compiler版本
+
+位置在
+
+```
+platforms/web/enrty-runtime-with-compiler
+```
+
+可以看到，这时候的Vue 来自
+
+```js
+import Vue from './runtime/index'
+```
+
+点击查看，发现 Vue 再次来自
+
+```js
+import Vue from 'core/index'
+```
+
+再次跳转过去，可以看到
+
+```js
+import Vue from './instance/index'
+```
+
+这才算是来到了vue的初始化函数这里。
+
+并且vue先执行自身的 _init 函数，进行初始化。
+
+## _init
 
 _init 很简单，内部就是初始化各项配置，有 initLifecycle, initEvents,
 
 initRender, initInjections, initState, initProvide,  初始化这些。
+
+定义在:
+
+```js
+instance/init.js
+```
 
 优点在于可以将各个模块分开到不同地方写，最后在init时进来初始化。
 
@@ -21,6 +59,8 @@ init函数最后，
 
 
 ### 挂载部分 $mount
+
+全局搜索Vue.prototype.$mount
 
 $mount 不同 环境方式构建出来的也不一样，先按照
 
@@ -49,8 +89,6 @@ new Vue({
   }
 })
 ```
-
-
 
 这个mount方法 需要查看import进来的vue函数，文件如下：
 
@@ -96,6 +134,8 @@ updateComponent是给Watcher 在初始化以及vm实例对象变化时去执行�
 
 
 
+### updateComponent 
+
 这里开始介绍这个 updateComponent 函数里，其实它的核心是另外的两个函数
 
 ```js
@@ -113,20 +153,19 @@ vm._render()
 
 instance调用的实际上是原型上的方法，
 
-应该看  Vue.prototype._render
+search  Vue.prototype._render
 
 它的定义在 `src/core/instance/render.js` 文件中：
 
 看到 renderMixin方法，可以看出来目的就是想要生成一个vnode，
 
 ```js
-      vnode = render.call(vm._renderProxy, vm.$createElement)
-
+vnode = render.call(vm._renderProxy, vm.$createElement)
 ```
 
 调用vm.$createElement方法
 
-```
+```js
 //declare interface Componet中声明
 $createElement: (tag?: string | Component, data?: Object, children?: VNodeChildren) => VNode;
 ```
@@ -156,8 +195,6 @@ export function createElement (
 }
 ```
 
-
-
 重载 很有意思的一步
 
 ```js
@@ -174,10 +211,14 @@ export function createElement (
 
 1. 根据 normalizationType 的值，对children进行扁平化
 
-2. 上一步 children将会返回成一个 VNode的数组，下面就是对children进行创建VNode 实例。比如会查看tag 是 string 还是 component，string情况，还会去看是否时html的标签，component也会去查看是否已经注册。最终，就是创建了一个VNode。
+2. 上一步 children将会返回成一个 VNode的数组，下面就是对children进行创建VNode 实例。
 
+   
+
+   比如会查看tag 是 string 还是 component，string情况，还会去看是否时html的标签，component也会去查看是否已经注册。最终，就是创建了一个VNode。
+   
    算是形成了vnode tree
-
+   
    以上是vm._render
 
 ### vm._update
