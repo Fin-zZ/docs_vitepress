@@ -20,6 +20,13 @@ next 开始查看我们的代码，报错也是一层一层的打印下来的，
 //微信小程序这个版本 作者自己封装了一层 wx表示普通的ws协议连接 wxs表示加密之后的wss协议连接。
 ````
 
+接着是漫长的debug过程，查找关键词 小程序 微信 mqtt ws连接 websocket这类。
+
+讨论平台有一些更换mqtt.min.js版本的方法，使用2.18.1， 或者4.1.0版本
+但都是报xxx is not a function 或者 xxx is not a Object
+这时候我们就跟换为 非压缩版本查看问题；其实还是慢慢的debug的，因为报错的地方也是层层调用的，
+错误行也看不出来问题所在 但想到该版本我们在pc ios 安卓浏览器里就是正常使用的呀；于是联想微信环境问题？
+稍微搜索下，发现有人提过，小程序环境里的global对象，
 ```js
 var Buffer = require('safe-buffer').Buffer;
 var OurUint8Array = global.Uint8Array || function () {};
@@ -31,7 +38,10 @@ function _isUint8Array(obj) {
 }
 
 ```
+https://developers.weixin.qq.com/community/develop/doc/00082ca48ec8b00ecc3895ceb53c00?highLine=mqtt 参考这个帖子
 
+https://segmentfault.com/q/1010000014721626
+文章里查到 在开发者工具上没有使用问题，但在真机上的问题解决方案
 eval函数问题，无法使用，我就改成JSON.parse解析,出来的json对象还是报错，是他们传递的数据问题，比如数字，25.0，他们通常穿的是25. 类似的还是科学技术2.0e6，结果他们是2.e6。 这类小数点的都给他们补成了 .0。
 
 ```js
