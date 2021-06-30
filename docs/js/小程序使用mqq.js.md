@@ -10,11 +10,27 @@ next 开始查看我们的代码，报错也是一层一层的打印下来的，
 
 父类：还是由上到下看引用，这里有proto文件的引用，这里我就想起来，在vue里使用proto文件的麻烦了。。。会不会小程序这里也有特殊性？就找到了github上一个转换给小程序使用的protobuf库，能够转换proto文件，也具备了，页替换了之前的lookup方法。这下以为总该可以了。
 
+接着是引用的mqtt.min.js的问题
+报错，错误行指向new Mqtt()的地方，然而该对象是我们直接引入的呀，于是先去查找是否版本问题，
+途中查询到，我们的websocket连接需要改为 wxs
+```js
+//mqtt.connect('wx://xxxxxxxxxx', options)；
+//wx://   xx.xx.xxxxxxx
+//协议版本  链接地址
+//微信小程序这个版本 作者自己封装了一层 wx表示普通的ws协议连接 wxs表示加密之后的wss协议连接。
+````
 
+```js
+var Buffer = require('safe-buffer').Buffer;
+var OurUint8Array = global.Uint8Array || function () {};
+function _uint8ArrayToBuffer(chunk) {
+  return Buffer.from(chunk);
+}
+function _isUint8Array(obj) {
+  return Buffer.isBuffer(obj) || obj instanceof OurUint8Array;
+}
 
-
-
-
+```
 
 eval函数问题，无法使用，我就改成JSON.parse解析,出来的json对象还是报错，是他们传递的数据问题，比如数字，25.0，他们通常穿的是25. 类似的还是科学技术2.0e6，结果他们是2.e6。 这类小数点的都给他们补成了 .0。
 
